@@ -17,6 +17,7 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 import shutil
+import configparser  # 导入configparser模块
 
 # 配置日志
 logger = logging.getLogger()
@@ -32,27 +33,21 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-# 检查环境变量
-missing_configs = []
+# 读取配置文件
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-username_env = os.getenv("LINUXDO_USERNAME")
-password_env = os.getenv("LINUXDO_PASSWORD")
-
-if not username_env:
-    missing_configs.append("环境变量 'LINUXDO_USERNAME' 未设置或为空")
-if not password_env:
-    missing_configs.append("环境变量 'LINUXDO_PASSWORD' 未设置或为空")
-
-if missing_configs:
-    logging.error(f"缺少必要配置: {', '.join(missing_configs)}，请在环境变量中设置。")
+# 检查配置项是否存在
+if not config.has_section('DEFAULT'):
+    logging.error("配置文件中缺少 DEFAULT 节，请检查 config.ini 文件。")
     exit(1)
 
-USERNAME = [line.strip() for line in username_env.splitlines() if line.strip()]
-PASSWORD = [line.strip() for line in password_env.splitlines() if line.strip()]
-SCROLL_DURATION = int(os.getenv("SCROLL_DURATION", 0))
-VIEW_COUNT = int(os.getenv("VIEW_COUNT", 1000))
-HOME_URL = os.getenv("HOME_URL", "https://linux.do/")
-CONNECT_URL = os.getenv("CONNECT_URL", "https://connect.linux.do/")
+USERNAME = [line.strip() for line in config.get('DEFAULT', 'LINUXDO_USERNAME').splitlines() if line.strip()]
+PASSWORD = [line.strip() for line in config.get('DEFAULT', 'LINUXDO_PASSWORD').splitlines() if line.strip()]
+SCROLL_DURATION = config.getint('DEFAULT', 'SCROLL_DURATION', fallback=0)
+VIEW_COUNT = config.getint('DEFAULT', 'VIEW_COUNT', fallback=1000)
+HOME_URL = config.get('DEFAULT', 'HOME_URL', fallback="https://linux.do/")
+CONNECT_URL = config.get('DEFAULT', 'CONNECT_URL', fallback="https://connect.linux.do/")
 
 browse_count = 0
 connect_info = ""
@@ -62,7 +57,7 @@ account_info = []
 user_count = len(USERNAME)
 
 if user_count != len(PASSWORD):
-    logging.error("用户名和密码的数量不一致，请检查环境变量设置。")
+    logging.error("用户名和密码的数量不一致，请检查配置文件设置。")
     exit(1)
 
 logging.info(f"共找到 {user_count} 个账户")
@@ -213,9 +208,7 @@ class LinuxDoBrowser:
                 return False
 
         except Exception as e:
-            logging.error(f"登录过程发生错误：{str(e)}")
-            
-           # 保存截图以便调试
+           logging.error(f"登录过程发生错误：{str(e)}")
            try:
                self.driver.save_screenshot("login_error.png")
                logging.info("已保存错误截图到 login_error.png")
@@ -228,13 +221,13 @@ class LinuxDoBrowser:
         actions = ActionChains(self.driver)
 
         while time.time() < end_time:
-            actions.scroll_by_amount(0, 500).perform()
-            time.sleep(0.1)
+           actions.scroll_by_amount(0, 500).perform()
+           time.sleep(0.1)
 
-        logging.info("页面滚动完成，已停止加载更多帖子")
+       logging.info("页面滚动完成，已停止加载更多帖子")
 
-    def click_topic(self):
-        try:
+   def click_topic(self):
+       try:
            # ... (省略部分代码，保持原有逻辑)
            pass
 
@@ -268,6 +261,7 @@ class LinuxDoBrowser:
 
                self.click_topic()
                logging.info(f"🎉 恭喜：{self.username}，帖子浏览全部完成")
+
                # 获取 Connect 信息（省略）
                self.logout()
 
