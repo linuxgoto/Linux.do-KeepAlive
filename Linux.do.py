@@ -3,8 +3,6 @@ import os
 import time
 import logging
 import random
-from os import path
-from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -17,7 +15,6 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 import shutil
-import configparser  # 导入configparser模块
 
 # 配置日志
 logger = logging.getLogger()
@@ -33,31 +30,31 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-# 读取配置文件
-config = configparser.ConfigParser()
-config.read('config.ini')
+# 检查环境变量
+USERNAME = os.getenv("LINUXDO_USERNAME")
+PASSWORD = os.getenv("LINUXDO_PASSWORD")
+SCROLL_DURATION = int(os.getenv("SCROLL_DURATION", 0))
+VIEW_COUNT = int(os.getenv("VIEW_COUNT", 1000))
+HOME_URL = os.getenv("HOME_URL", "https://linux.do/")
+CONNECT_URL = os.getenv("CONNECT_URL", "https://connect.linux.do/")
 
-# 检查配置项是否存在
-if not config.has_section('DEFAULT'):
-    logging.error("配置文件中缺少 DEFAULT 节，请检查 config.ini 文件。")
+if not USERNAME or not PASSWORD:
+    logging.error("环境变量 'LINUXDO_USERNAME' 或 'LINUXDO_PASSWORD' 未设置或为空")
     exit(1)
 
-USERNAME = [line.strip() for line in config.get('DEFAULT', 'LINUXDO_USERNAME').splitlines() if line.strip()]
-PASSWORD = [line.strip() for line in config.get('DEFAULT', 'LINUXDO_PASSWORD').splitlines() if line.strip()]
-SCROLL_DURATION = config.getint('DEFAULT', 'SCROLL_DURATION', fallback=0)
-VIEW_COUNT = config.getint('DEFAULT', 'VIEW_COUNT', fallback=1000)
-HOME_URL = config.get('DEFAULT', 'HOME_URL', fallback="https://linux.do/")
-CONNECT_URL = config.get('DEFAULT', 'CONNECT_URL', fallback="https://connect.linux.do/")
+# 将用户名和密码分行读取，支持多个账号
+USERNAME_LIST = [line.strip() for line in USERNAME.splitlines() if line.strip()]
+PASSWORD_LIST = [line.strip() for line in PASSWORD.splitlines() if line.strip()]
 
 browse_count = 0
 connect_info = ""
 like_count = 0
 account_info = []
 
-user_count = len(USERNAME)
+user_count = len(USERNAME_LIST)
 
-if user_count != len(PASSWORD):
-    logging.error("用户名和密码的数量不一致，请检查配置文件设置。")
+if user_count != len(PASSWORD_LIST):
+    logging.error("用户名和密码的数量不一致，请检查环境变量设置。")
     exit(1)
 
 logging.info(f"共找到 {user_count} 个账户")
@@ -76,7 +73,6 @@ class LinuxDoBrowser:
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--headless")  # 启用无头模式
         chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-notifications")
         chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.add_argument('--allow-running-insecure-content')
@@ -84,7 +80,8 @@ class LinuxDoBrowser:
 
         # 添加 user-agent（根据需要修改）
         chrome_options.add_argument(
-            '--user-agent=Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0')
+            '--user-agent=Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'
+        )
 
         # 检查 chromedriver 路径
         global chromedriver_path
@@ -216,11 +213,11 @@ class LinuxDoBrowser:
 
     def click_topic(self):
        try:
-           # ... (保持原有逻辑)
-           pass
+          # ... (保持原有逻辑)
+          pass
 
        except Exception as e:
-           logging.error(f"click_topic 方法发生错误: {e}")
+          logging.error(f"click_topic 方法发生错误: {e}")
 
     def run(self):
        """主运行函数"""
