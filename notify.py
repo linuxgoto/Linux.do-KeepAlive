@@ -11,6 +11,7 @@ import time
 import urllib.parse
 
 import requests
+import configparser  # 导入configparser模块
 
 _print = print 
 mutex = threading.Lock()
@@ -19,28 +20,25 @@ def print(text, *args, **kw):
     with mutex:
         _print(text, *args, **kw)
 
+# 读取配置文件并初始化通知配置项    
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 push_config = {
-   'BARK_PUSH': '',
-   'DD_BOT_SECRET': '',
-   'DD_BOT_TOKEN': '',
-   'FSKEY': '',
-   'GOBOT_URL': '',
-   'GOBOT_QQ': '',
-   'GOTIFY_URL': '',
-   'GOTIFY_TOKEN': '',
-   'SMTP_SERVER': '',
-   'SMTP_SSL': 'false',
-   'SMTP_EMAIL': '',
-   'SMTP_PASSWORD': '',
-   'SMTP_NAME': '',
+   'BARK_PUSH': config.get('DEFAULT', 'BARK_PUSH', fallback=''),
+   'DD_BOT_SECRET': config.get('DEFAULT', 'DD_BOT_SECRET', fallback=''),
+   'DD_BOT_TOKEN': config.get('DEFAULT', 'DD_BOT_TOKEN', fallback=''),
+   'FSKEY': config.get('DEFAULT', 'FSKEY', fallback=''),
+   'GOBOT_URL': config.get('DEFAULT', 'GOBOT_URL', fallback=''),
+   'GOBOT_QQ': config.get('DEFAULT', 'GOBOT_QQ', fallback=''),
+   'GOTIFY_URL': config.get('DEFAULT', 'GOTIFY_URL', fallback=''),
+   'GOTIFY_TOKEN': config.get('DEFAULT', 'GOTIFY_TOKEN', fallback=''),
+   'SMTP_SERVER': config.get('DEFAULT', 'SMTP_SERVER', fallback=''),
+   'SMTP_SSL': config.get('DEFAULT', 'SMTP_SSL', fallback='false'),
+   'SMTP_EMAIL': config.get('DEFAULT', 'SMTP_EMAIL', fallback=''),
+   'SMTP_PASSWORD': config.get('DEFAULT', 'SMTP_PASSWORD', fallback=''),
+   'SMTP_NAME': config.get('DEFAULT', 'SMTP_NAME', fallback=''),
 }
-
-for k in push_config:
-   if os.getenv(k):
-       v = os.getenv(k)
-       push_config[k] = v
-
 
 def bark(title: str, content: str) -> None:
     if not push_config.get("BARK_PUSH"):
